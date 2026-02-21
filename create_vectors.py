@@ -2,17 +2,32 @@
 import json
 import os
 import sys
+import hashlib
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import pickle
 from tqdm import tqdm
+import time
 
-def load_chunked_files(directory_path):
+def get_file_hash(filepath):
+    """Calculate MD5 hash of a file's content."""
+    hash_md5 = hashlib.md5()
+    try:
+        with open(filepath, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
+    except Exception as e:
+        print(f"Error calculating hash for {filepath}: {e}")
+        return None
+
+def load_chunked_files(directory_path, cache_file='file_cache.json'):
     """
     Load all chunked JSON files from the directory.
     
     Args:
         directory_path (str): Path to directory containing chunked JSON files
+        cache_file (str): Path to cache file storing file hashes
     
     Returns:
         list: List of all messages from all chunked files
@@ -27,21 +42,69 @@ def load_chunked_files(directory_path):
         return all_messages
     
     print(f"Found {len(json_files)} chunked files to process:")
-    for json_file in json_files:
-        print(f"  - {json_file}")
+    
+    # Load or create cache
+    file_cache = {}
+    if os.path.exists(cache_file):
         try:
-            with open(os.path.join(directory_path, json_file), 'r', encoding='utf-8') as file:
-                data = json.load(file)
-                # Each file contains a list of messages
-                for item in data:
-                    # If it's a grouped message (has 'messages' key), flatten it
-                    if 'messages' in item and isinstance(item['messages'], list):
-                        for msg in item['messages']:
-                            all_messages.append(msg)
-                    else:
-                        all_messages.append(item)
+            with open(cache_file, 'r') as f:
+                file_cache = json.load(f)
         except Exception as e:
-            print(f"Error loading {json_file}: {e}")
+            print(f"Error loading cache file: {e}")
+    
+    # Check which files need to be processed
+    files_to_process = []
+    files_to_skip = []
+    
+    for json_file in json_files:
+        file_path = os.path.join(directory_path, json_file)
+        current_hash = get_file_hash(file_path)
+        
+        if current_hash is None:
+            files_to_process.append(json_file)
+            continue
+            
+        if json_file in file_cache and file_cache[json_file] == current_hash:
+            files_to_skip.append(json_file)
+        else:
+            files_to_process.append(json_file)
+    
+    if files_to_skip:
+        print(f"Skipping {len(files_to_skip)} files (no changes detected):")
+        for f in files_to_skip:
+            print(f"  - {f}")
+    
+    if files_to_process:
+        print(f"Processing {len(files_to_process)} files:")
+        for json_file in files_to_process:
+            print(f"  - {json_file}")
+            try:
+                with open(os.path.join(directory_path, json_file), 'r', encoding='utf-8') as file:
+                    data = json.load(file)
+                    # Each file contains a list of messages
+                    for item in data:
+                        # If it's a grouped message (has 'messages' key), flatten it
+                        if 'messages' in item and isinstance(item['messages'], list):
+                            for msg in item['messages']:
+                                all_messages.append(msg)
+                        else:
+                            all_messages.append(item)
+            except Exception as e:
+                print(f"Error loading {json_file}: {e}")
+    
+    # Update cache with new hashes
+    for json_file in json_files:
+        file_path = os.path.join(directory_path, json_file)
+        current_hash = get_file_hash(file_path)
+        if current_hash is not None:
+            file_cache[json_file] = current_hash
+    
+    # Save updated cache
+    try:
+        with open(cache_file, 'w') as f:
+            json.dump(file_cache, f, indent=2)
+    except Exception as e:
+        print(f"Error saving cache file: {e}")
     
     return all_messages
 
