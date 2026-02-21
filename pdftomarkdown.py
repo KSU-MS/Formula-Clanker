@@ -43,7 +43,7 @@ def pdf_to_markdown(pdf_path):
                         line = line.strip()
                         if not line:
                             continue
-                            
+   		   	                    
                         # Handle headers (detect based on font size and formatting)
                         if len(line) > 50 and line.isupper():
                             processed_lines.append(f"# {line}")
@@ -85,14 +85,14 @@ def create_markdown_from_pdf(pdf_path, output_dir):
     
     print(f"Converted: {pdf_path} -> {markdown_path}")
 
-def convert_folder(input_folder, output_folder):
+def convert_folder():
     """
-    Convert all PDFs in a folder and its subfolders to Markdown.
+    Convert all PDFs in the 'onenote' folder and its subfolders to Markdown.
+    """
+    # Set input and output folders
+    input_folder = 'onenote'
+    output_folder = 'onenote_markdown'
     
-    Args:
-        input_folder (str): Path to the input folder
-        output_folder (str): Path to the output folder
-    """
     # Ensure input folder exists
     if not os.path.exists(input_folder):
         print(f"Error: Input folder '{input_folder}' does not exist.")
@@ -106,7 +106,7 @@ def convert_folder(input_folder, output_folder):
                 pdf_files.append(os.path.join(root, file))
     
     if not pdf_files:
-        print("No PDF files found in the folder and subfolders.")
+        print("No PDF files found in the 'onenote' folder and subfolders.")
         return
     
     print(f"Found {len(pdf_files)} PDF files to convert.")
@@ -123,15 +123,8 @@ def convert_folder(input_folder, output_folder):
     print(f"Conversion complete. {converted_count} files converted.")
 
 def main():
-    """Main function to handle command line arguments and run conversion."""
-    parser = argparse.ArgumentParser(description='Convert PDF files to Markdown')
-    parser.add_argument('input_folder', help='Path to the folder containing PDF files')
-    parser.add_argument('-o', '--output', default='markdown_output', 
-                       help='Output folder for Markdown files (default: markdown_output)')
-    
-    args = parser.parse_args()
-    
-    convert_folder(args.input_folder, args.output)
+    """Main function to run conversion."""
+    convert_folder()
 
 if __name__ == "__main__":
     main()

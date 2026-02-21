@@ -340,6 +340,7 @@ def main():
         print("  Discord:  python chunk.py discord <discord_directory>")
         print("  Markdown: python chunk.py markdown <markdown_directory> [output_directory]")
         print("  Both:     python chunk.py both <discord_dir> <markdown_dir> [markdown_output]")
+        print("  Both (auto): python chunk.py both <root_dir>  # detects Discord .txt and 'onenote_markdown' folder")
         print("\nExamples:")
         print("  python chunk.py discord 'discord_exports/KSU Motorsports'")
         print("  python chunk.py markdown markdown_output chunked_markdown")
@@ -372,21 +373,38 @@ def main():
         process_markdown_files(md_dir, output_dir)
     
     elif mode == 'both':
-        if len(sys.argv) < 4:
-            print("Error: Both mode requires two directory paths")
-            print("Usage: python chunk.py both <discord_dir> <markdown_dir> [markdown_output]")
-            sys.exit(1)
-        discord_dir = sys.argv[2]
-        md_dir = sys.argv[3]
-        markdown_output = sys.argv[4] if len(sys.argv) > 4 else 'chunked_markdown'
-        
+        # Support two forms:
+        # 1) python chunk.py both <discord_dir> <markdown_dir> [markdown_output]
+        # 2) python chunk.py both <root_dir>  -> auto-detects discord .txt files and 'onenote' folder
+        if len(sys.argv) == 3:
+            root_dir = sys.argv[2]
+            if not os.path.exists(root_dir):
+                print(f"Error: Root directory '{root_dir}' does not exist")
+                sys.exit(1)
+            discord_dir, md_dir = _locate_discord_and_markdown(root_dir)
+            if not discord_dir:
+                print(f"Error: Could not find a Discord directory with .txt files under '{root_dir}'")
+                sys.exit(1)
+            if not md_dir:
+                print(f"Error: Could not find a markdown directory (prefer 'onenote') under '{root_dir}'")
+                sys.exit(1)
+            markdown_output = 'chunked_markdown'
+        else:
+            if len(sys.argv) < 4:
+                print("Error: Both mode requires two directory paths")
+                print("Usage: python chunk.py both <discord_dir> <markdown_dir> [markdown_output]")
+                sys.exit(1)
+            discord_dir = sys.argv[2]
+            md_dir = sys.argv[3]
+            markdown_output = sys.argv[4] if len(sys.argv) > 4 else 'chunked_markdown'
+
         if not os.path.exists(discord_dir):
             print(f"Error: Discord directory '{discord_dir}' does not exist")
             sys.exit(1)
         if not os.path.exists(md_dir):
             print(f"Error: Markdown directory '{md_dir}' does not exist")
             sys.exit(1)
-        
+
         print("=" * 60)
         print("Processing Discord exports and Markdown files")
         print("=" * 60)
@@ -399,6 +417,47 @@ def main():
         print(f"Error: Unknown mode '{mode}'")
         print("Valid modes: discord, markdown, both")
         sys.exit(1)
+
+def _locate_discord_and_markdown(root_dir):
+    """
+    Try to locate a discord directory (contains .txt files) and a markdown directory
+    (prefer 'onenote') under a given root directory.
+
+    Returns (discord_dir, md_dir) or (None, None) when not found.
+    """
+    # Discord candidates: root itself if it has .txt, then common subfolders
+    discord_candidates = [root_dir,
+                          os.path.join(root_dir, 'discord_exports'),
+                          os.path.join(root_dir, 'discord'),
+                          os.path.join(root_dir, 'exports')]
+
+    discord_dir = None
+    for c in discord_candidates:
+        if os.path.isdir(c):
+            try:
+                if any(f.endswith('.txt') for f in os.listdir(c)):
+                    discord_dir = c
+                    break
+            except Exception:
+                continue
+
+    # Markdown candidates: prefer 'onenote'
+    md_candidates = [os.path.join(root_dir, 'onenote_markdown'),
+                    os.path.join(root_dir, 'markdown'),
+                    os.path.join(root_dir, 'md'),
+                    root_dir]
+
+    md_dir = None
+    for c in md_candidates:
+        if os.path.isdir(c):
+            try:
+                if any(f.endswith('.md') for f in os.listdir(c)):
+                    md_dir = c
+                    break
+            except Exception:
+                continue
+
+    return discord_dir, md_dir
 
 if __name__ == "__main__":
     main()
