@@ -19,7 +19,7 @@ def load_chunked_files(directory_path):
     all_messages = []
     
     # Get all .json files in the directory
-    json_files = [f for f in os.listdir(directory_path) if f.endswith('_chunks.json') and os.path.isfile(os.path.join(directory_path, f))]
+    json_files = [f for f in os.listdir(directory_path) if f.endswith('_messages.json') and os.path.isfile(os.path.join(directory_path, f))]
     
     if not json_files:
         print(f"No chunked JSON files found in '{directory_path}'")
