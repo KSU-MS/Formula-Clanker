@@ -1,0 +1,628 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formula Clanker Search</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .search-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        #search-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        #search-input:focus {
+            border-color: #3498db;
+        }
+        
+        #search-button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            background: #3498db;
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        #search-button:hover {
+            background: #2980b9;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        label {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        #top-k-input {
+            width: 60px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 0.9rem;
+        }
+        
+        #sort-by {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 0.9rem;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .results-container {
+            margin-top: 25px;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .results-count {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            transition: all 0.2s;
+            border: 1px solid #eee;
+        }
+        
+        .result-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-color: #3498db;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .score {
+            background: #e1f0fa;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .result-content {
+            margin-bottom: 10px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+        
+        .result-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .context-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow: auto;
+        }
+        
+        .context-content {
+            background: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .context-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: #333;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .context-lines {
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .context-line {
+            padding: 6px 10px;
+            margin-bottom: 3px;
+            border-radius: 3px;
+        }
+        
+        .context-line.target {
+            background: #e1f0fa;
+            border-left: 3px solid #3498db;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 1rem;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3498db;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 25px;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        .error {
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            text-align: center;
+            color: #c62828;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .context-btn, .discord-link-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .context-btn {
+            background: #34495e;
+            color: white;
+        }
+        
+        .context-btn:hover {
+            background: #2c3e50;
+        }
+        
+        .discord-link-btn {
+            background: #5865f2;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .discord-link-btn:hover {
+            background: #4752c4;
+        }
+        
+        @media (max-width: 768px) {
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .result-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-search"></i> Formula Clanker Search</h1>
+            <p class="subtitle">Search through Discord chat history using semantic similarity</p>
+        </header>
+        
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Enter your search query...">
+                <button id="search-button"><i class="fas fa-search"></i> Search</button>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="top-k-input">Top Results:</label>
+                    <input type="number" id="top-k-input" value="10" min="1" max="50">
+                </div>
+                <div class="control-group">
+                    <label for="sort-by">Sort By:</label>
+                    <select id="sort-by">
+                        <option value="score">Relevance Score</option>
+                        <option value="username">Username</option>
+                        <option value="timestamp">Time (Newest)</option>
+                        <option value="timestamp-oldest">Time (Oldest)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="results-container">
+            <div class="results-header">
+                <h2>Search Results</h2>
+                <div class="results-count" id="results-count">0 results</div>
+            </div>
+            
+            <div id="results-list" class="results-list">
+                <div class="no-results">
+                    <p>Enter a search query to find relevant messages</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="context-modal" class="context-modal">
+        <div class="context-content">
+            <div class="context-header">
+                <h2>Context View</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div id="context-lines" class="context-lines"></div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+            const topKInput = document.getElementById('top-k-input');
+            const sortBySelect = document.getElementById('sort-by');
+            const resultsList = document.getElementById('results-list');
+            const resultsCount = document.getElementById('results-count');
+            const contextModal = document.getElementById('context-modal');
+            const contextLines = document.getElementById('context-lines');
+            const closeBtn = document.querySelector('.close-btn');
+            
+            let currentResults = [];  // Store current results for sorting
+            
+            // Close modal when clicking the close button
+            closeBtn.addEventListener('click', function() {
+                contextModal.style.display = 'none';
+            });
+            
+            // Close modal when clicking outside the content
+            window.addEventListener('click', function(event) {
+                if (event.target === contextModal) {
+                    contextModal.style.display = 'none';
+                }
+            });
+            
+            // Sort results function
+            function sortResults(results, sortBy) {
+                const sorted = [...results];  // Create a copy to avoid mutating original
+                
+                switch(sortBy) {
+                    case 'score':
+                        sorted.sort((a, b) => b.score - a.score);
+                        break;
+                    case 'username':
+                        sorted.sort((a, b) => a.username.localeCompare(b.username));
+                        break;
+                    case 'timestamp':
+                        // Newest first
+                        sorted.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        break;
+                    case 'timestamp-oldest':
+                        // Oldest first
+                        sorted.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                        break;
+                    default:
+                        sorted.sort((a, b) => b.score - a.score);
+                }
+                
+                return sorted;
+            }
+            
+            // Search function
+            function performSearch() {
+                const query = searchInput.value.trim();
+                const topK = topKInput.value;
+                
+                if (!query) {
+                    alert('Please enter a search query');
+                    return;
+                }
+                
+                // Show loading
+                resultsList.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Searching for: "${query}"</p>
+                    </div>
+                `;
+                
+                // Send request to backend
+                fetch('/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        top_k: topK
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        resultsList.innerHTML = `<div class="error">${data.error}</div>`;
+                        return;
+                    }
+                    
+                    currentResults = data.results;
+                    const sortBy = sortBySelect.value;
+                    const sortedResults = sortResults(currentResults, sortBy);
+                    displayResults(sortedResults);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    resultsList.innerHTML = `<div class="error">Error occurred during search: ${error.message}</div>`;
+                });
+            }
+            
+            // Display search results
+            function displayResults(results) {
+                if (results.length === 0) {
+                    resultsList.innerHTML = '<div class="no-results"><p>No results found for your search query</p></div>';
+                    resultsCount.textContent = '0 results';
+                    return;
+                }
+                
+                resultsCount.textContent = `${results.length} result${results.length !== 1 ? 's' : ''}`;
+                
+                let resultsHTML = '';
+                
+                results.forEach((result, index) => {
+                    resultsHTML += `
+                        <div class="result-card">
+                            <div class="result-header">
+                                <div class="score">Score: ${result.score.toFixed(4)}</div>
+                            </div>
+                            <div class="result-content">
+                                ${result.content.replace(/\n/g, '<br>')}
+                            </div>
+                            <div class="result-meta">
+                                <div class="meta-item">
+                                    <i class="fas fa-user"></i>
+                                    <span>${result.username}</span>
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>${result.timestamp}</span>
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fas fa-file"></i>
+                                    <span>${result.source_file}</span>
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fas fa-hashtag"></i>
+                                    <span>Line ${result.line_number}</span>
+                                </div>
+                            </div>
+                            <div class="button-container">
+                                <button class="context-btn" data-source="${result.source_file}" data-line="${result.line_number}">
+                                    <i class="fas fa-eye"></i> View Context
+                                </button>
+                                ${result.discord_link ? `<a href="${result.discord_link}" target="_blank" class="discord-link-btn"><i class="fab fa-discord"></i> Open in Discord</a>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                resultsList.innerHTML = resultsHTML;
+                
+                // Add event listeners to context buttons
+                document.querySelectorAll('.context-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const sourceFile = this.getAttribute('data-source');
+                        const lineNumber = this.getAttribute('data-line');
+                        showContext(sourceFile, lineNumber);
+                    });
+                });
+            }
+            
+            // Show context modal
+            function showContext(sourceFile, lineNumber) {
+                fetch('/context', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        source_file: sourceFile,
+                        line_number: lineNumber,
+                        context_lines: 10
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        return;
+                    }
+                    
+                    let contextHTML = '';
+                    data.context.forEach(line => {
+                        contextHTML += `
+                            <div class="context-line ${line.is_target ? 'target' : ''}">
+                                <strong>${line.line_number}:</strong> ${line.content}
+                            </div>
+                        `;
+                    });
+                    
+                    contextLines.innerHTML = contextHTML;
+                    contextModal.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error retrieving context: ' + error.message);
+                });
+            }
+            
+            // Event listeners
+            searchButton.addEventListener('click', performSearch);
+            
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+            
+            // Handle sort change - re-sort and display current results
+            sortBySelect.addEventListener('change', function() {
+                if (currentResults.length > 0) {
+                    const sortedResults = sortResults(currentResults, this.value);
+                    displayResults(sortedResults);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
