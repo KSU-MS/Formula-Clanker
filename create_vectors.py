@@ -5,6 +5,7 @@ import sys
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import pickle
+from tqdm import tqdm
 
 def load_chunked_files(directory_path):
     """
@@ -83,9 +84,15 @@ def create_vectors(messages, model_name='all-mpnet-base-v2', output_path='vector
     
     print(f"Vectorizing {len(message_contents)} messages...")
     
-    # Create embeddings
+    # Create embeddings with progress bar
     if message_contents:
-        embeddings = model.encode(message_contents)
+        embeddings = []
+        # Use tqdm for progress bar
+        for content in tqdm(message_contents, desc="Creating embeddings"):
+            embedding = model.encode(content)
+            embeddings.append(embedding)
+        
+        embeddings = np.array(embeddings)
         print(f"Created embeddings of shape: {embeddings.shape}")
     else:
         print("No content to vectorize")
