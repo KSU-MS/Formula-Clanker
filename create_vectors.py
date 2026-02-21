@@ -108,6 +108,42 @@ def load_chunked_files(directory_path, cache_file='file_cache.json'):
     
     return all_messages
 
+def load_markdown_chunks(directory_path):
+    """
+    Load all markdown chunked JSON files from the directory.
+    
+    Args:
+        directory_path (str): Path to directory containing markdown chunked JSON files
+        
+    Returns:
+        list: List of all messages from all markdown chunked files
+    """
+    all_messages = []
+    
+    # Walk through all subdirectories
+    for root, dirs, files in os.walk(directory_path):
+        for file in files:
+            if file.endswith('.json') and 'chunk' in file.lower():
+                file_path = os.path.join(root, file)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        # Extract content and metadata
+                        if 'content' in data and 'metadata' in data:
+                            message = {
+                                'content': data['content'],
+                                'source_file': data['metadata'].get('file_name', ''),
+                                'file_path': data['metadata'].get('file_path', ''),
+                                'chunk_id': data.get('chunk_id', ''),
+                                'chunk_index': data.get('chunk_index', 0),
+                                'original_message': data
+                            }
+                            all_messages.append(message)
+                except Exception as e:
+                    print(f"Error loading markdown chunk file {file_path}: {e}")
+    
+    return all_messages
+
 def create_vectors(messages, model_name='all-mpnet-base-v2', output_path='vectors.pkl'):
     """
     Create vector embeddings for messages using sentence transformers.
@@ -143,6 +179,13 @@ def create_vectors(messages, model_name='all-mpnet-base-v2', output_path='vector
             # Include discord_info if available
             if 'discord_info' in msg:
                 metadata_entry['discord_info'] = msg['discord_info']
+            # Include markdown metadata if available
+            if 'file_path' in msg:
+                metadata_entry['file_path'] = msg['file_path']
+            if 'chunk_id' in msg:
+                metadata_entry['chunk_id'] = msg['chunk_id']
+            if 'chunk_index' in msg:
+                metadata_entry['chunk_index'] = msg['chunk_index']
             message_metadata.append(metadata_entry)
     
     print(f"Vectorizing {len(message_contents)} messages...")
@@ -176,28 +219,49 @@ def create_vectors(messages, model_name='all-mpnet-base-v2', output_path='vector
     return embeddings, message_metadata
 
 def main():
-    # Default directory path for chunked files
-    directory_path = "discord_jsons"
+    # Default directory paths
+    discord_directory_path = "discord_jsons"
+    markdown_directory_path = "chunked_output"
     
-    # Check if directory exists
-    if not os.path.exists(directory_path):
-        print(f"Error: Directory '{directory_path}' not found.")
-        return
+    # Check if directories exist
+    if not os.path.exists(discord_directory_path):
+        print(f"Warning: Directory '{discord_directory_path}' not found.")
+        discord_directory_path = None
     
-    # Load chunked files
-    print("Loading chunked files...")
-    messages = load_chunked_files(directory_path)
+    # Try alternate markdown directory names
+    if not os.path.exists(markdown_directory_path):
+        if os.path.exists("chunked_markdown"):
+            markdown_directory_path = "chunked_markdown"
+        else:
+            print(f"Warning: No markdown chunk directory found (tried '{markdown_directory_path}' and 'chunked_markdown').")
+            markdown_directory_path = None
     
-    if not messages:
+    all_messages = []
+    
+    # Load Discord messages if directory exists
+    if discord_directory_path and os.path.exists(discord_directory_path):
+        print("Loading Discord chunked files...")
+        discord_messages = load_chunked_files(discord_directory_path)
+        all_messages.extend(discord_messages)
+        print(f"Total Discord messages loaded: {len(discord_messages)}")
+    
+    # Load markdown chunks if directory exists
+    if markdown_directory_path and os.path.exists(markdown_directory_path):
+        print("Loading markdown chunked files...")
+        markdown_messages = load_markdown_chunks(markdown_directory_path)
+        all_messages.extend(markdown_messages)
+        print(f"Total markdown chunks loaded: {len(markdown_messages)}")
+    
+    if not all_messages:
         print("No messages found to vectorize.")
         return
     
-    print(f"Total messages loaded: {len(messages)}")
+    print(f"Total messages loaded: {len(all_messages)}")
     
     # Create vectors using a more powerful model
     print("Creating vectors with enhanced model...")
     embeddings, message_metadata = create_vectors(
-        messages, 
+        all_messages, 
         model_name='all-mpnet-base-v2',  # More powerful model
         output_path='vectors.pkl'
     )

@@ -128,6 +128,50 @@
             cursor: pointer;
         }
         
+        .filters-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .filters-section h3 {
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            color: #2c3e50;
+        }
+        
+        .filter-controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        #filter-year, #filter-channel, #filter-source {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 0.9rem;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .clear-filters {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            background: #e74c3c;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .clear-filters:hover {
+            background: #c0392b;
+        }
+        
         .results-container {
             margin-top: 25px;
         }
@@ -358,7 +402,7 @@
     <div class="container">
         <header>
             <h1><i class="fas fa-search"></i> Formula Clanker Search</h1>
-            <p class="subtitle">Search through Discord chat history using semantic similarity</p>
+            <p class="subtitle">Search through Discord chat history and OneNote documents using semantic similarity</p>
         </header>
         
         <div class="search-container">
@@ -380,6 +424,33 @@
                         <option value="timestamp">Time (Newest)</option>
                         <option value="timestamp-oldest">Time (Oldest)</option>
                     </select>
+                </div>
+            </div>
+            
+            <div class="filters-section">
+                <h3><i class="fas fa-filter"></i> Filters</h3>
+                <div class="filter-controls">
+                    <div class="control-group">
+                        <label for="filter-year">Year:</label>
+                        <select id="filter-year">
+                            <option value="">All Years</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="filter-channel">Channel:</label>
+                        <select id="filter-channel">
+                            <option value="">All Channels</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="filter-source">Source:</label>
+                        <select id="filter-source">
+                            <option value="">All Sources</option>
+                            <option value="discord">Discord Messages</option>
+                            <option value="markdown">OneNote/Documents</option>
+                        </select>
+                    </div>
+                    <button id="clear-filters-btn" class="clear-filters">Clear Filters</button>
                 </div>
             </div>
         </div>
@@ -414,6 +485,10 @@
             const searchButton = document.getElementById('search-button');
             const topKInput = document.getElementById('top-k-input');
             const sortBySelect = document.getElementById('sort-by');
+            const filterYearSelect = document.getElementById('filter-year');
+            const filterChannelSelect = document.getElementById('filter-channel');
+            const filterSourceSelect = document.getElementById('filter-source');
+            const clearFiltersBtn = document.getElementById('clear-filters-btn');
             const resultsList = document.getElementById('results-list');
             const resultsCount = document.getElementById('results-count');
             const contextModal = document.getElementById('context-modal');
@@ -421,6 +496,47 @@
             const closeBtn = document.querySelector('.close-btn');
             
             let currentResults = [];  // Store current results for sorting
+            let availableFilters = {};  // Store available filters
+            
+            // Load available filters on page load
+            function loadAvailableFilters() {
+                fetch('/filters', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    availableFilters = data;
+                    
+                    // Populate year filter
+                    if (data.years && data.years.length > 0) {
+                        data.years.forEach(year => {
+                            const option = document.createElement('option');
+                            option.value = year;
+                            option.textContent = year;
+                            filterYearSelect.appendChild(option);
+                        });
+                    }
+                    
+                    // Populate channel filter
+                    if (data.channels && data.channels.length > 0) {
+                        data.channels.forEach(channel => {
+                            const option = document.createElement('option');
+                            option.value = channel;
+                            option.textContent = `Channel ${channel}`;
+                            filterChannelSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading filters:', error);
+                });
+            }
+            
+            // Load filters on page load
+            loadAvailableFilters();
             
             // Close modal when clicking the close button
             closeBtn.addEventListener('click', function() {
@@ -460,10 +576,33 @@
                 return sorted;
             }
             
+            // Get active filters
+            function getActiveFilters() {
+                return {
+                    year: filterYearSelect.value,
+                    channel: filterChannelSelect.value,
+                    source_type: filterSourceSelect.value
+                };
+            }
+            
+            // Clear filters
+            clearFiltersBtn.addEventListener('click', function() {
+                filterYearSelect.value = '';
+                filterChannelSelect.value = '';
+                filterSourceSelect.value = '';
+                // Re-run search with cleared filters if there are current results
+                if (currentResults.length > 0) {
+                    const sortBy = sortBySelect.value;
+                    const sortedResults = sortResults(currentResults, sortBy);
+                    displayResults(sortedResults);
+                }
+            });
+            
             // Search function
             function performSearch() {
                 const query = searchInput.value.trim();
                 const topK = topKInput.value;
+                const filters = getActiveFilters();
                 
                 if (!query) {
                     alert('Please enter a search query');
@@ -486,7 +625,8 @@
                     },
                     body: JSON.stringify({
                         query: query,
-                        top_k: topK
+                        top_k: topK,
+                        filters: filters
                     })
                 })
                 .then(response => response.json())
@@ -510,7 +650,7 @@
             // Display search results
             function displayResults(results) {
                 if (results.length === 0) {
-                    resultsList.innerHTML = '<div class="no-results"><p>No results found for your search query</p></div>';
+                    resultsList.innerHTML = '<div class="no-results"><p>No results found for your search query or filters</p></div>';
                     resultsCount.textContent = '0 results';
                     return;
                 }
@@ -520,6 +660,9 @@
                 let resultsHTML = '';
                 
                 results.forEach((result, index) => {
+                    const sourceIcon = result.source_type === 'discord' ? '<i class="fab fa-discord"></i>' : '<i class="fas fa-file-alt"></i>';
+                    const sourceLabel = result.source_type === 'discord' ? 'Discord' : 'Document';
+                    
                     resultsHTML += `
                         <div class="result-card">
                             <div class="result-header">
@@ -530,6 +673,10 @@
                             </div>
                             <div class="result-meta">
                                 <div class="meta-item">
+                                    ${sourceIcon}
+                                    <span>${sourceLabel}</span>
+                                </div>
+                                <div class="meta-item">
                                     <i class="fas fa-user"></i>
                                     <span>${result.username}</span>
                                 </div>
@@ -537,19 +684,19 @@
                                     <i class="fas fa-clock"></i>
                                     <span>${result.timestamp}</span>
                                 </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-file"></i>
-                                    <span>${result.source_file}</span>
-                                </div>
-                                <div class="meta-item">
+                                ${result.channel_id ? `<div class="meta-item">
                                     <i class="fas fa-hashtag"></i>
-                                    <span>Line ${result.line_number}</span>
-                                </div>
+                                    <span>Channel ${result.channel_id}</span>
+                                </div>` : ''}
+                                ${result.file_path ? `<div class="meta-item">
+                                    <i class="fas fa-folder"></i>
+                                    <span>${result.file_path}</span>
+                                </div>` : ''}
                             </div>
                             <div class="button-container">
-                                <button class="context-btn" data-source="${result.source_file}" data-line="${result.line_number}">
+                                ${result.source_file ? `<button class="context-btn" data-source="${result.source_file}" data-line="${result.line_number}">
                                     <i class="fas fa-eye"></i> View Context
-                                </button>
+                                </button>` : ''}
                                 ${result.discord_link ? `<a href="${result.discord_link}" target="_blank" class="discord-link-btn"><i class="fab fa-discord"></i> Open in Discord</a>` : ''}
                             </div>
                         </div>
@@ -621,6 +768,13 @@
                     const sortedResults = sortResults(currentResults, this.value);
                     displayResults(sortedResults);
                 }
+            });
+            
+            // Handle filter changes - re-run search with new filters
+            [filterYearSelect, filterChannelSelect, filterSourceSelect].forEach(filter => {
+                filter.addEventListener('change', function() {
+                    performSearch();
+                });
             });
         });
     </script>
