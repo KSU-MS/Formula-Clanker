@@ -1,7 +1,7 @@
 # Search-Guy
-Scraping our discord (and soon OneNote) to make a universally searchable index for our team. 
+Scraping our discord (and soon OneNote) to make a universally searchable index for our team. This isn't the most well written but rn its a proof of concept. It'll probably get a full rewrite soon (TM).
 
-Instructions:
+# Instructions:
 1. Clone this repo.
 2. make a venv (use uv)
 3. insert your bot token into "BOT_TOKEN" in "scrapeDiscord.py", then run it
