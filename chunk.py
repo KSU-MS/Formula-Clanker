@@ -53,7 +53,7 @@ def chunk_lines_to_json(input_file_path, output_file_path=None):
             continue
             
         # Match timestamp pattern [YYYY-MM-DD HH:MM:SS UTC] username: message content
-        # Updated to be more flexible with potential whitespace and special characters in usernames
+        # Updated to handle usernames with special characters like #
         timestamp_pattern = r'\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC)\] (.*?): (.*)'
         match = re.match(timestamp_pattern, line)
         
