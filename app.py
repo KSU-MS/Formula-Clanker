@@ -236,10 +236,13 @@ def search():
                 'content': result['content'],
                 'username': metadata.get('username', 'Unknown'),
                 'timestamp': metadata.get('timestamp', 'Unknown'),
-                'source_file': metadata.get('source_file', 'Unknown'),
-                'line_number': metadata.get('line_number', 'Unknown'),
                 'source_type': 'discord' if 'discord_info' in metadata else 'markdown'
             }
+            
+            # Only include source_file and line_number if they're valid
+            if metadata.get('source_file') and metadata.get('line_number'):
+                formatted_result['source_file'] = metadata.get('source_file')
+                formatted_result['line_number'] = metadata.get('line_number')
             
             # Add Discord link information if available
             if 'discord_info' in metadata:

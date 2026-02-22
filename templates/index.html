@@ -694,7 +694,7 @@
                                 </div>` : ''}
                             </div>
                             <div class="button-container">
-                                ${result.source_file ? `<button class="context-btn" data-source="${result.source_file}" data-line="${result.line_number}">
+                                ${result.source_file && result.line_number ? `<button class="context-btn" data-source="${result.source_file}" data-line="${result.line_number}">
                                     <i class="fas fa-eye"></i> View Context
                                 </button>` : ''}
                                 ${result.discord_link ? `<a href="${result.discord_link}" target="_blank" class="discord-link-btn"><i class="fab fa-discord"></i> Open in Discord</a>` : ''}
