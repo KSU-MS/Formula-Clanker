@@ -337,7 +337,72 @@
             color: #c62828;
         }
         
-        .refresh-banner {
+        .updating-screen {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .updating-screen.hidden {
+            display: none;
+            opacity: 0;
+        }
+        
+        .updating-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .updating-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 80px;
+            height: 80px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 30px;
+        }
+        
+        .updating-screen h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .updating-screen p {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            opacity: 0.95;
+        }
+        
+        .updating-screen .instruction {
+            font-size: 1rem;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            max-width: 500px;
+        }
+        
+        .updating-screen code {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            display: block;
+            margin-top: 10px;
+            font-size: 0.95rem;
+        }
             display: none;
             background: #fff3cd;
             border: 1px solid #ffc107;
@@ -347,6 +412,14 @@
             align-items: center;
             gap: 12px;
             animation: slideDown 0.3s ease-out;
+        }
+        
+        .refresh-banner code {
+            background: #ffe4a1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.9em;
         }
         
         .refresh-banner.show {
@@ -436,6 +509,19 @@
     </style>
 </head>
 <body>
+    <div id="updating-screen" class="updating-screen">
+        <div class="updating-content">
+            <div class="updating-spinner"></div>
+            <h1>Updating Database</h1>
+            <p>Vector database is being created...</p>
+            <p style="font-size: 0.9rem; opacity: 0.8;">Please wait while the system indexes your data</p>
+            <div class="instruction">
+                <p>If you see this screen for more than a few minutes, run:</p>
+                <code>python create_vectors.py</code>
+            </div>
+        </div>
+    </div>
+    
     <div id="refresh-banner" class="refresh-banner">
         <div class="refresh-spinner"></div>
         <span id="refresh-message">Database is refreshing... Please wait</span>
@@ -538,6 +624,7 @@
             const closeBtn = document.querySelector('.close-btn');
             const refreshBanner = document.getElementById('refresh-banner');
             const refreshMessage = document.getElementById('refresh-message');
+            const updatingScreen = document.getElementById('updating-screen');
             
             let currentResults = [];  // Store current results for sorting
             let availableFilters = {};  // Store available filters
@@ -552,16 +639,27 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    if (!data.database_loaded) {
+                        // Database not loaded - show updating screen
+                        updatingScreen.classList.remove('hidden');
+                        // Check again in 2 seconds
+                        setTimeout(checkRefreshStatus, 2000);
+                        return;
+                    } else {
+                        // Database is loaded - hide updating screen
+                        updatingScreen.classList.add('hidden');
+                    }
+                    
                     if (data.is_refreshing) {
                         refreshBanner.classList.add('show');
-                        refreshMessage.textContent = 'Database is refreshing... Please wait';
+                        refreshMessage.innerHTML = '<i class="fas fa-spinner"></i> Database is refreshing... Please wait';
                         searchButton.disabled = true;
                         // Check again in 1 second
                         setTimeout(checkRefreshStatus, 1000);
                     } else {
                         if (refreshBanner.classList.contains('show')) {
                             // Just finished refreshing
-                            refreshMessage.textContent = 'Database refresh complete! Reloading...';
+                            refreshMessage.innerHTML = '<i class="fas fa-check"></i> Database refresh complete! Reloading...';
                             setTimeout(() => {
                                 refreshBanner.classList.remove('show');
                                 searchButton.disabled = false;

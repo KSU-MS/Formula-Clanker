@@ -215,11 +215,20 @@ def reload_vectors():
 @app.route('/refresh_status', methods=['GET'])
 def refresh_status():
     """Check if the vector database is currently being refreshed"""
-    is_refreshing = os.path.exists('vectors.refreshing')
-    return jsonify({
-        'is_refreshing': is_refreshing,
-        'database_loaded': vector_database is not None
-    })
+    try:
+        is_refreshing = os.path.exists('vectors.refreshing')
+        return jsonify({
+            'is_refreshing': is_refreshing,
+            'database_loaded': vector_database is not None,
+            'message': 'Database loading' if not vector_database and is_refreshing else 'Ready'
+        })
+    except Exception as e:
+        print(f"Error in refresh_status endpoint: {str(e)}")
+        return jsonify({
+            'is_refreshing': False,
+            'database_loaded': False,
+            'error': str(e)
+        }), 200
 
 @app.route('/')
 def index():
@@ -304,7 +313,12 @@ def search():
 def get_filters():
     """Get available filter options"""
     if vector_database is None:
-        return jsonify({'error': 'Vector database not loaded'}), 500
+        # Return empty filters if database not loaded
+        return jsonify({
+            'years': [],
+            'channels': [],
+            'source_types': []
+        })
     
     try:
         filters = get_available_filters(vector_database)
