@@ -131,9 +131,16 @@ def load_markdown_chunks(directory_path):
                         data = json.load(f)
                         # Extract content and metadata
                         if 'content' in data and 'metadata' in data:
+                            # Detect source type based on file path
+                            source_type = 'markdown'  # default
+                            file_name = data['metadata'].get('file_name', '')
+                            if 'onenote' in file_path.lower() or 'onenote' in file_name.lower():
+                                source_type = 'onenote'
+                            
                             message = {
                                 'content': data['content'],
-                                'source_file': data['metadata'].get('file_name', ''),
+                                'source_file': file_name,
+                                'source_type': source_type,
                                 'file_path': data['metadata'].get('file_path', ''),
                                 'chunk_id': data.get('chunk_id', ''),
                                 'chunk_index': data.get('chunk_index', 0),
@@ -191,11 +198,19 @@ def create_vectors(messages, model_name='all-mpnet-base-v2', output_path='vector
         content = msg.get('content', '')
         if content:
             message_contents.append(content)
+            # Determine source type
+            source_type = msg.get('source_type', 'discord')  # default to discord if not specified
+            if 'discord_info' in msg:
+                source_type = 'discord'
+            elif 'file_path' in msg and source_type != 'onenote':
+                source_type = 'markdown'
+            
             metadata_entry = {
                 'line_number': msg.get('line_number'),
                 'timestamp': msg.get('timestamp'),
                 'username': msg.get('username'),
                 'source_file': msg.get('source_file'),
+                'source_type': source_type,
                 'original_message': msg
             }
             # Include discord_info if available
