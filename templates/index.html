@@ -608,7 +608,11 @@
     </div>
     
     <script>
+        console.log('Script starting...');
+        
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded fired');
+            
             const searchInput = document.getElementById('search-input');
             const searchButton = document.getElementById('search-button');
             const topKInput = document.getElementById('top-k-input');
@@ -626,27 +630,37 @@
             const refreshMessage = document.getElementById('refresh-message');
             const updatingScreen = document.getElementById('updating-screen');
             
+            console.log('updating-screen element:', updatingScreen);
+            
             let currentResults = [];  // Store current results for sorting
             let availableFilters = {};  // Store available filters
             
             // Check refresh status periodically
             function checkRefreshStatus() {
+                console.log('Checking refresh status...');
                 fetch('/refresh_status', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Refresh status data:', data);
+                    
                     if (!data.database_loaded) {
                         // Database not loaded - show updating screen
+                        console.log('Database not loaded, showing updating screen');
                         updatingScreen.classList.remove('hidden');
                         // Check again in 2 seconds
                         setTimeout(checkRefreshStatus, 2000);
                         return;
                     } else {
                         // Database is loaded - hide updating screen
+                        console.log('Database loaded, hiding updating screen');
                         updatingScreen.classList.add('hidden');
                     }
                     
@@ -676,10 +690,12 @@
                 });
             }
             
+            console.log('Setting up status check interval...');
             // Check refresh status every 2 seconds
             setInterval(checkRefreshStatus, 2000);
             
             // Initial check
+            console.log('Running initial status check...');
             checkRefreshStatus();
             
             // Load available filters on page load
