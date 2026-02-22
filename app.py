@@ -238,6 +238,10 @@ def index():
 def test():
     return render_template('test.html')
 
+@app.route('/simple')
+def simple():
+    return render_template('simple.html')
+
 @app.route('/search', methods=['POST'])
 def search():
     print("Search endpoint called")
