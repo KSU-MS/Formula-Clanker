@@ -132,7 +132,7 @@ def main(file_or_folder, format="markdown", workers=None, dpi_text=800, dpi_md=8
                 
                 # Save to file if output_dir is specified
                 if output_dir:
-                    save_result_to_file(pdf_file, result, format, output_dir)
+                    save_result_to_file(pdf_file, result, format, output_dir, file_or_folder)
                     
             except Exception as e:
                 print(f"Error processing {pdf_file}: {repr(e)}")
@@ -143,8 +143,6 @@ def main(file_or_folder, format="markdown", workers=None, dpi_text=800, dpi_md=8
     else:
         # Single file processing (original behavior)
         return process_single_pdf(file_or_folder, format, workers, dpi_text, dpi_md)
-
-
 def process_single_pdf(file, format="markdown", workers=None, dpi_text=800, dpi_md=800):
     """Process a single PDF file"""
     kind = filetype.guess(file)
@@ -239,28 +237,24 @@ def save_result_to_file(input_file, result, format, output_dir):
     # Get filename without extension
     filename = os.path.splitext(os.path.basename(input_file))[0]
     
-    # Get the relative path from the input folder to preserve directory structure
-    if os.path.isdir(input_file):
-        # If input is a directory, we're saving to the output directory directly
-        output_file = os.path.join(output_dir, f"{filename}.{format}")
+    # Get the absolute path of the input file
+    input_file_abs = os.path.abspath(input_file)
+    
+    # Get the absolute path of the input folder
+    input_folder_abs = os.path.abspath(file_or_folder)
+    
+    # Get the relative path from input folder to current file
+    rel_path = os.path.relpath(input_file_abs, input_folder_abs)
+    
+    # Remove the filename from the path to get just the directory structure
+    rel_dir = os.path.dirname(rel_path)
+    
+    # Create the output directory structure
+    if rel_dir:
+        output_subdir = os.path.join(output_dir, rel_dir)
+        os.makedirs(output_subdir, exist_ok=True)
+        output_file = os.path.join(output_subdir, f"{filename}.{format}")
     else:
-        # If input is a file, we preserve the path structure
-        # Get the base directory of the input folder
-        input_base = os.path.abspath(input_file)
-        while not os.path.isdir(input_base):
-            input_base = os.path.dirname(input_base)
-        
-        # Get the relative path from input folder to current file
-        rel_path = os.path.relpath(input_file, input_base)
-        # Remove the filename from the path to get just the directory structure
-        rel_dir = os.path.dirname(rel_path)
-        
-        # Create the output directory structure
-        if rel_dir:
-            output_subdir = os.path.join(output_dir, rel_dir)
-            os.makedirs(output_subdir, exist_ok=True)
-            output_file = os.path.join(output_subdir, f"{filename}.{format}")
-        else:
             output_file = os.path.join(output_dir, f"{filename}.{format}")
     
     # Write result to file
