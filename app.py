@@ -190,6 +190,37 @@ vector_database = load_vector_database('vectors.pkl')
 if vector_database is None:
     print("Warning: Vector database not loaded. Search functionality will be limited.")
 
+@app.route('/reload_vectors', methods=['POST'])
+def reload_vectors():
+    """Reload the vector database from disk"""
+    global vector_database
+    
+    try:
+        print("Reloading vector database...")
+        new_database = load_vector_database('vectors.pkl')
+        
+        if new_database is None:
+            return jsonify({'error': 'Failed to load vector database'}), 500
+        
+        vector_database = new_database
+        print(f"Vector database reloaded successfully with {len(vector_database['embeddings'])} embeddings")
+        return jsonify({
+            'success': True,
+            'message': f'Vector database reloaded with {len(vector_database["embeddings"])} embeddings'
+        })
+    except Exception as e:
+        print(f"Error reloading vector database: {str(e)}")
+        return jsonify({'error': f'Failed to reload: {str(e)}'}), 500
+
+@app.route('/refresh_status', methods=['GET'])
+def refresh_status():
+    """Check if the vector database is currently being refreshed"""
+    is_refreshing = os.path.exists('vectors.refreshing')
+    return jsonify({
+        'is_refreshing': is_refreshing,
+        'database_loaded': vector_database is not None
+    })
+
 @app.route('/')
 def index():
     return render_template('index.html')

@@ -8,6 +8,7 @@ import numpy as np
 import pickle
 from tqdm import tqdm
 import time
+import requests
 
 def get_file_hash(filepath):
     """Calculate MD5 hash of a file's content."""
@@ -144,6 +145,27 @@ def load_markdown_chunks(directory_path):
     
     return all_messages
 
+def reload_app_vectors():
+    """Send a request to the Flask app to reload the vector database."""
+    try:
+        print("Sending reload request to Flask app...")
+        response = requests.post('http://localhost:5000/reload_vectors', timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            print(f"✓ Vectors reloaded successfully: {data.get('message', 'Success')}")
+            return True
+        else:
+            print(f"✗ Reload request failed with status code {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+    except requests.exceptions.ConnectionError:
+        print("⚠ Warning: Could not connect to Flask app at localhost:5000")
+        print("  Make sure the Flask app is running to reload vectors automatically")
+        return False
+    except Exception as e:
+        print(f"⚠ Error sending reload request: {e}")
+        return False
+
 def create_vectors(messages, model_name='all-mpnet-base-v2', output_path='vectors.pkl'):
     """
     Create vector embeddings for messages using sentence transformers.
@@ -221,6 +243,14 @@ def create_vectors(messages, model_name='all-mpnet-base-v2', output_path='vector
     return embeddings, message_metadata
 
 def main():
+    # Create flag file to indicate refresh in progress
+    try:
+        with open('vectors.refreshing', 'w') as f:
+            f.write('refreshing')
+        print("Created refresh flag file")
+    except Exception as e:
+        print(f"Warning: Could not create refresh flag file: {e}")
+    
     # Default directory paths
     discord_directory_path = "discord_jsons"
     markdown_directory_path = "chunked_output"
@@ -267,6 +297,17 @@ def main():
         model_name='all-mpnet-base-v2',  # More powerful model
         output_path='vectors.pkl'
     )
+    
+    # Reload vectors in the Flask app
+    print("\nAttempting to reload vectors in Flask app...")
+    reload_app_vectors()
+    
+    # Remove refresh flag file
+    try:
+        os.remove('vectors.refreshing')
+        print("Removed refresh flag file")
+    except Exception as e:
+        print(f"Warning: Could not remove refresh flag file: {e}")
 
 if __name__ == "__main__":
     main()

@@ -337,6 +337,43 @@
             color: #c62828;
         }
         
+        .refresh-banner {
+            display: none;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            gap: 12px;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        .refresh-banner.show {
+            display: flex;
+        }
+        
+        .refresh-spinner {
+            border: 2px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 2px solid #ffc107;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            flex-shrink: 0;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .button-container {
             display: flex;
             gap: 10px;
@@ -399,6 +436,11 @@
     </style>
 </head>
 <body>
+    <div id="refresh-banner" class="refresh-banner">
+        <div class="refresh-spinner"></div>
+        <span id="refresh-message">Database is refreshing... Please wait</span>
+    </div>
+    
     <div class="container">
         <header>
             <h1><i class="fas fa-search"></i> Formula Clanker Search</h1>
@@ -494,9 +536,53 @@
             const contextModal = document.getElementById('context-modal');
             const contextLines = document.getElementById('context-lines');
             const closeBtn = document.querySelector('.close-btn');
+            const refreshBanner = document.getElementById('refresh-banner');
+            const refreshMessage = document.getElementById('refresh-message');
             
             let currentResults = [];  // Store current results for sorting
             let availableFilters = {};  // Store available filters
+            
+            // Check refresh status periodically
+            function checkRefreshStatus() {
+                fetch('/refresh_status', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.is_refreshing) {
+                        refreshBanner.classList.add('show');
+                        refreshMessage.textContent = 'Database is refreshing... Please wait';
+                        searchButton.disabled = true;
+                        // Check again in 1 second
+                        setTimeout(checkRefreshStatus, 1000);
+                    } else {
+                        if (refreshBanner.classList.contains('show')) {
+                            // Just finished refreshing
+                            refreshMessage.textContent = 'Database refresh complete! Reloading...';
+                            setTimeout(() => {
+                                refreshBanner.classList.remove('show');
+                                searchButton.disabled = false;
+                                // Reload available filters
+                                loadAvailableFilters();
+                            }, 2000);
+                        } else {
+                            searchButton.disabled = false;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking refresh status:', error);
+                });
+            }
+            
+            // Check refresh status every 2 seconds
+            setInterval(checkRefreshStatus, 2000);
+            
+            // Initial check
+            checkRefreshStatus();
             
             // Load available filters on page load
             function loadAvailableFilters() {
@@ -509,6 +595,14 @@
                 .then(response => response.json())
                 .then(data => {
                     availableFilters = data;
+                    
+                    // Clear existing options (except the default)
+                    while (filterYearSelect.options.length > 1) {
+                        filterYearSelect.remove(1);
+                    }
+                    while (filterChannelSelect.options.length > 1) {
+                        filterChannelSelect.remove(1);
+                    }
                     
                     // Populate year filter
                     if (data.years && data.years.length > 0) {
@@ -606,6 +700,11 @@
                 
                 if (!query) {
                     alert('Please enter a search query');
+                    return;
+                }
+                
+                if (refreshBanner.classList.contains('show')) {
+                    alert('Database is currently refreshing. Please wait and try again.');
                     return;
                 }
                 
