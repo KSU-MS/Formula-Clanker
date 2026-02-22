@@ -1,0 +1,13 @@
+Flask
+sentence-transformers
+scikit-learn
+numpy
+tqdm
+requests
+pdf2image
+pytesseract
+filetype
+pymupdf4llm
+pdfplumber
+markdown-it-py
+discord.py
