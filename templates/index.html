@@ -756,6 +756,8 @@
                 });
             }
             
+            // Show context modal for Discord messages
+            function showContext(sourceFile, lineNumber) {
                 fetch('/context', {
                     method: 'POST',
                     headers: {

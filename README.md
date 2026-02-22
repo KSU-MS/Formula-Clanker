@@ -2,11 +2,7 @@
 Scraping our discord (and soon OneNote) to make a universally searchable index for our team. This isn't the most well written but rn its a proof of concept. It'll probably get a full rewrite soon (TM).
 
 # Instructions:
-1. Clone this repo.
-2. make a venv (use uv)
-3. insert your bot token into "BOT_TOKEN" in "scrapeDiscord.py", then run it
-4. run "chunk.py" then "create_vectors.py". The latter will require significant resources. (took over an hour on a 64GB RAM and 16 core machine)
-5. run "app.py" and in theory your search will work
+TBD
 
 # Troubleshooting
 * make sure all the python libraries are installed
