@@ -234,6 +234,10 @@ def refresh_status():
 def index():
     return render_template('index.html')
 
+@app.route('/test')
+def test():
+    return render_template('test.html')
+
 @app.route('/search', methods=['POST'])
 def search():
     print("Search endpoint called")
