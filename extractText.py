@@ -160,7 +160,7 @@ def process_single_pdf(file, format="markdown", workers=None, dpi_text=800, dpi_
     # -----------------------------
     # TEXT mode (parallel OCR)
     # -----------------------------
-    if format == "text":
+    if format == "txt":
         try:
             page_count = get_page_count(file)
         except Exception as e:
@@ -187,7 +187,7 @@ def process_single_pdf(file, format="markdown", workers=None, dpi_text=800, dpi_
     # -----------------------------
     # MARKDOWN mode
     # -----------------------------
-    elif format == "markdown":
+    elif format == "md":
         # First, try the library's to_markdown with its native signature
         try:
             print("Attempting high-quality pymupdf4llm.to_markdown() (library default).")
