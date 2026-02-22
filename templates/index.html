@@ -128,50 +128,6 @@
             cursor: pointer;
         }
         
-        .filters-section {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
-        }
-        
-        .filters-section h3 {
-            font-size: 0.95rem;
-            margin-bottom: 12px;
-            color: #2c3e50;
-        }
-        
-        .filter-controls {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        
-        #filter-year, #filter-channel, #filter-source {
-            padding: 8px 12px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            font-size: 0.9rem;
-            background-color: white;
-            cursor: pointer;
-        }
-        
-        .clear-filters {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            background: #e74c3c;
-            color: white;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        .clear-filters:hover {
-            background: #c0392b;
-        }
-        
         .results-container {
             margin-top: 25px;
         }
@@ -338,115 +294,43 @@
         }
         
         .updating-screen {
-            display: flex;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            opacity: 1;
-            transition: opacity 0.5s ease-out;
-        }
-        
-        .updating-screen.hidden {
             display: none;
-            opacity: 0;
-        }
-        
-        .updating-content {
             text-align: center;
-            color: white;
+            padding: 60px 20px;
         }
         
-        .updating-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid white;
-            width: 80px;
-            height: 80px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 30px;
+        .updating-screen.show {
+            display: block;
         }
         
-        .updating-screen h1 {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        .updating-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        
+        .updating-screen h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
         }
         
         .updating-screen p {
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-            opacity: 0.95;
-        }
-        
-        .updating-screen .instruction {
-            font-size: 1rem;
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            max-width: 500px;
-        }
-        
-        .updating-screen code {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            display: block;
-            margin-top: 10px;
-            font-size: 0.95rem;
-        }
-        
-        .refresh-banner {
-            display: none;
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 6px;
-            padding: 15px;
+            color: #7f8c8d;
             margin-bottom: 20px;
-            align-items: center;
-            gap: 12px;
-            animation: slideDown 0.3s ease-out;
+            font-size: 1.1rem;
         }
         
-        .refresh-banner code {
-            background: #ffe4a1;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
-            font-size: 0.9em;
+        .content-area {
+            display: none;
         }
         
-        .refresh-banner.show {
-            display: flex;
-        }
-        
-        .refresh-spinner {
-            border: 2px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 2px solid #ffc107;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            flex-shrink: 0;
-        }
-        
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .content-area.show {
+            display: block;
         }
         
         .button-container {
@@ -510,30 +394,23 @@
         }
     </style>
 </head>
-<body style="margin: 0; padding: 0;">
-    <div id="updating-screen" class="updating-screen">
-        <div class="updating-content">
-            <div class="updating-spinner"></div>
-            <h1>Updating Database</h1>
-            <p>Vector database is being created...</p>
-            <p style="font-size: 0.9rem; opacity: 0.8;">Please wait while the system indexes your data</p>
-            <div class="instruction">
-                <p>If you see this screen for more than a few minutes, run:</p>
-                <code>python create_vectors.py</code>
-            </div>
-        </div>
-    </div>
-    
-    <div id="refresh-banner" class="refresh-banner">
-        <div class="refresh-spinner"></div>
-        <span id="refresh-message">Database is refreshing... Please wait</span>
-    </div>
-    
+<body>
     <div class="container">
-        <header>
-            <h1><i class="fas fa-search"></i> Formula Clanker Search</h1>
-            <p class="subtitle">Search through Discord chat history and OneNote documents using semantic similarity</p>
-        </header>
+        <div class="updating-screen" id="updating-screen">
+            <div class="updating-icon">
+                <i class="fas fa-database"></i>
+            </div>
+            <h2>Database Updating</h2>
+            <p>The vector database is currently being updated or initialized.</p>
+            <p>Please wait a moment and we'll check again...</p>
+            <div class="spinner" style="margin-top: 20px;"></div>
+        </div>
+        
+        <div class="content-area" id="content-area">
+            <header>
+                <h1><i class="fas fa-search"></i> Formula Clanker Search</h1>
+                <p class="subtitle">Search through Discord chat history using semantic similarity</p>
+            </header>
         
         <div class="search-container">
             <div class="search-box">
@@ -556,33 +433,6 @@
                     </select>
                 </div>
             </div>
-            
-            <div class="filters-section">
-                <h3><i class="fas fa-filter"></i> Filters</h3>
-                <div class="filter-controls">
-                    <div class="control-group">
-                        <label for="filter-year">Year:</label>
-                        <select id="filter-year">
-                            <option value="">All Years</option>
-                        </select>
-                    </div>
-                    <div class="control-group">
-                        <label for="filter-channel">Channel:</label>
-                        <select id="filter-channel">
-                            <option value="">All Channels</option>
-                        </select>
-                    </div>
-                    <div class="control-group">
-                        <label for="filter-source">Source:</label>
-                        <select id="filter-source">
-                            <option value="">All Sources</option>
-                            <option value="discord">Discord Messages</option>
-                            <option value="markdown">OneNote/Documents</option>
-                        </select>
-                    </div>
-                    <button id="clear-filters-btn" class="clear-filters">Clear Filters</button>
-                </div>
-            </div>
         </div>
         
         <div class="results-container">
@@ -596,7 +446,8 @@
                     <p>Enter a search query to find relevant messages</p>
                 </div>
             </div>
-        </div>zzzz
+        </div>
+        </div>
     </div>
     
     <div id="context-modal" class="context-modal">
@@ -610,145 +461,47 @@
     </div>
     
     <script>
-        // Immediately check if database is loaded without waiting for DOM
-        (async function() {
-            try {
-                const response = await fetch('/refresh_status');
-                const data = await response.json();
-                
-                if (data.database_loaded) {
-                    // Database exists, hide updating screen
-                    const updatingScreen = document.getElementById('updating-screen');
-                    if (updatingScreen) {
-                        updatingScreen.classList.add('hidden');
-                    }
-                }
-            } catch (error) {
-                console.log('Error checking database status:', error);
-            }
-        })();
-        
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('search-input');
             const searchButton = document.getElementById('search-button');
             const topKInput = document.getElementById('top-k-input');
             const sortBySelect = document.getElementById('sort-by');
-            const filterYearSelect = document.getElementById('filter-year');
-            const filterChannelSelect = document.getElementById('filter-channel');
-            const filterSourceSelect = document.getElementById('filter-source');
-            const clearFiltersBtn = document.getElementById('clear-filters-btn');
             const resultsList = document.getElementById('results-list');
             const resultsCount = document.getElementById('results-count');
             const contextModal = document.getElementById('context-modal');
             const contextLines = document.getElementById('context-lines');
             const closeBtn = document.querySelector('.close-btn');
-            const refreshBanner = document.getElementById('refresh-banner');
-            const refreshMessage = document.getElementById('refresh-message');
             const updatingScreen = document.getElementById('updating-screen');
+            const contentArea = document.getElementById('content-area');
             
             let currentResults = [];  // Store current results for sorting
-            let availableFilters = {};  // Store available filters
             
-            // Check refresh status periodically
-            function checkRefreshStatus() {
-                fetch('/refresh_status', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.database_loaded) {
-                        // Database not loaded - show updating screen
-                        updatingScreen.classList.remove('hidden');
-                        // Check again in 2 seconds
-                        setTimeout(checkRefreshStatus, 2000);
-                        return;
-                    } else {
-                        // Database is loaded - hide updating screen
-                        updatingScreen.classList.add('hidden');
-                    }
-                    
-                    if (data.is_refreshing) {
-                        refreshBanner.classList.add('show');
-                        refreshMessage.innerHTML = '<i class="fas fa-spinner"></i> Database is refreshing... Please wait';
-                        searchButton.disabled = true;
-                        // Check again in 1 second
-                        setTimeout(checkRefreshStatus, 1000);
-                    } else {
-                        if (refreshBanner.classList.contains('show')) {
-                            // Just finished refreshing
-                            refreshMessage.innerHTML = '<i class="fas fa-check"></i> Database refresh complete! Reloading...';
-                            setTimeout(() => {
-                                refreshBanner.classList.remove('show');
-                                searchButton.disabled = false;
-                                // Reload available filters
-                                loadAvailableFilters();
-                            }, 2000);
+            // Check database status
+            function checkDatabaseStatus() {
+                fetch('/status')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.ready) {
+                            updatingScreen.classList.remove('show');
+                            contentArea.classList.add('show');
                         } else {
-                            searchButton.disabled = false;
+                            updatingScreen.classList.add('show');
+                            contentArea.classList.remove('show');
+                            // Check again in 2 seconds
+                            setTimeout(checkDatabaseStatus, 2000);
                         }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error checking refresh status:', error);
-                });
+                    })
+                    .catch(error => {
+                        console.error('Error checking database status:', error);
+                        updatingScreen.classList.add('show');
+                        contentArea.classList.remove('show');
+                        // Retry after 2 seconds
+                        setTimeout(checkDatabaseStatus, 2000);
+                    });
             }
             
-            // Check refresh status every 2 seconds
-            setInterval(checkRefreshStatus, 2000);
-            
-            // Initial check (slight delay to let page render)
-            setTimeout(checkRefreshStatus, 500);
-            
-            // Load available filters on page load
-            function loadAvailableFilters() {
-                fetch('/filters', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    availableFilters = data;
-                    
-                    // Clear existing options (except the default)
-                    while (filterYearSelect.options.length > 1) {
-                        filterYearSelect.remove(1);
-                    }
-                    while (filterChannelSelect.options.length > 1) {
-                        filterChannelSelect.remove(1);
-                    }
-                    
-                    // Populate year filter
-                    if (data.years && data.years.length > 0) {
-                        data.years.forEach(year => {
-                            const option = document.createElement('option');
-                            option.value = year;
-                            option.textContent = year;
-                            filterYearSelect.appendChild(option);
-                        });
-                    }
-                    
-                    // Populate channel filter
-                    if (data.channels && data.channels.length > 0) {
-                        data.channels.forEach(channel => {
-                            const option = document.createElement('option');
-                            option.value = channel;
-                            option.textContent = `Channel ${channel}`;
-                            filterChannelSelect.appendChild(option);
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading filters:', error);
-                });
-            }
-            
-            // Load filters on page load
-            loadAvailableFilters();
+            // Check status on load
+            checkDatabaseStatus();
             
             // Close modal when clicking the close button
             closeBtn.addEventListener('click', function() {
@@ -788,41 +541,13 @@
                 return sorted;
             }
             
-            // Get active filters
-            function getActiveFilters() {
-                return {
-                    year: filterYearSelect.value,
-                    channel: filterChannelSelect.value,
-                    source_type: filterSourceSelect.value
-                };
-            }
-            
-            // Clear filters
-            clearFiltersBtn.addEventListener('click', function() {
-                filterYearSelect.value = '';
-                filterChannelSelect.value = '';
-                filterSourceSelect.value = '';
-                // Re-run search with cleared filters if there are current results
-                if (currentResults.length > 0) {
-                    const sortBy = sortBySelect.value;
-                    const sortedResults = sortResults(currentResults, sortBy);
-                    displayResults(sortedResults);
-                }
-            });
-            
             // Search function
             function performSearch() {
                 const query = searchInput.value.trim();
                 const topK = topKInput.value;
-                const filters = getActiveFilters();
                 
                 if (!query) {
                     alert('Please enter a search query');
-                    return;
-                }
-                
-                if (refreshBanner.classList.contains('show')) {
-                    alert('Database is currently refreshing. Please wait and try again.');
                     return;
                 }
                 
@@ -842,8 +567,7 @@
                     },
                     body: JSON.stringify({
                         query: query,
-                        top_k: topK,
-                        filters: filters
+                        top_k: topK
                     })
                 })
                 .then(response => response.json())
@@ -867,7 +591,7 @@
             // Display search results
             function displayResults(results) {
                 if (results.length === 0) {
-                    resultsList.innerHTML = '<div class="no-results"><p>No results found for your search query or filters</p></div>';
+                    resultsList.innerHTML = '<div class="no-results"><p>No results found for your search query</p></div>';
                     resultsCount.textContent = '0 results';
                     return;
                 }
@@ -877,9 +601,6 @@
                 let resultsHTML = '';
                 
                 results.forEach((result, index) => {
-                    const sourceIcon = result.source_type === 'discord' ? '<i class="fab fa-discord"></i>' : '<i class="fas fa-file-alt"></i>';
-                    const sourceLabel = result.source_type === 'discord' ? 'Discord' : 'Document';
-                    
                     resultsHTML += `
                         <div class="result-card">
                             <div class="result-header">
@@ -890,10 +611,6 @@
                             </div>
                             <div class="result-meta">
                                 <div class="meta-item">
-                                    ${sourceIcon}
-                                    <span>${sourceLabel}</span>
-                                </div>
-                                <div class="meta-item">
                                     <i class="fas fa-user"></i>
                                     <span>${result.username}</span>
                                 </div>
@@ -901,21 +618,19 @@
                                     <i class="fas fa-clock"></i>
                                     <span>${result.timestamp}</span>
                                 </div>
-                                ${result.channel_id ? `<div class="meta-item">
+                                <div class="meta-item">
+                                    <i class="fas fa-file"></i>
+                                    <span>${result.source_file}</span>
+                                </div>
+                                <div class="meta-item">
                                     <i class="fas fa-hashtag"></i>
-                                    <span>Channel ${result.channel_id}</span>
-                                </div>` : ''}
-                                ${result.file_path ? `<div class="meta-item">
-                                    <i class="fas fa-folder"></i>
-                                    <span>${result.file_path}</span>
-                                </div>` : ''}
+                                    <span>Line ${result.line_number}</span>
+                                </div>
                             </div>
                             <div class="button-container">
-                                ${result.chunk_id ? `<button class="context-btn" data-chunk-id="${result.chunk_id}" data-type="markdown">
-                                    <i class="fas fa-eye"></i> View Content
-                                </button>` : result.source_file && result.line_number ? `<button class="context-btn" data-source="${result.source_file}" data-line="${result.line_number}" data-type="discord">
+                                <button class="context-btn" data-source="${result.source_file}" data-line="${result.line_number}">
                                     <i class="fas fa-eye"></i> View Context
-                                </button>` : ''}
+                                </button>
                                 ${result.discord_link ? `<a href="${result.discord_link}" target="_blank" class="discord-link-btn"><i class="fab fa-discord"></i> Open in Discord</a>` : ''}
                             </div>
                         </div>
@@ -927,53 +642,14 @@
                 // Add event listeners to context buttons
                 document.querySelectorAll('.context-btn').forEach(button => {
                     button.addEventListener('click', function() {
-                        const type = this.getAttribute('data-type');
-                        if (type === 'markdown') {
-                            const chunkId = this.getAttribute('data-chunk-id');
-                            showMarkdownContent(chunkId);
-                        } else {
-                            const sourceFile = this.getAttribute('data-source');
-                            const lineNumber = this.getAttribute('data-line');
-                            showContext(sourceFile, lineNumber);
-                        }
+                        const sourceFile = this.getAttribute('data-source');
+                        const lineNumber = this.getAttribute('data-line');
+                        showContext(sourceFile, lineNumber);
                     });
                 });
             }
-            // Show markdown content modal
-            function showMarkdownContent(chunkId) {
-                fetch('/context', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        chunk_id: chunkId
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert('Error: ' + data.error);
-                        return;
-                    }
-                    
-                    // Display markdown content
-                    contextLines.innerHTML = `
-                        <div class="context-line">
-                            <strong>File:</strong> ${data.file_path}
-                        </div>
-                        <hr style="margin: 10px 0;">
-                        ${data.content.replace(/\n/g, '<br>')}
-                    `;
-                    contextModal.style.display = 'block';
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error retrieving content: ' + error.message);
-                });
-            }
             
-            // Show context modal for Discord messages
+            // Show context modal
             function showContext(sourceFile, lineNumber) {
                 fetch('/context', {
                     method: 'POST',
@@ -1026,13 +702,6 @@
                     const sortedResults = sortResults(currentResults, this.value);
                     displayResults(sortedResults);
                 }
-            });
-            
-            // Handle filter changes - re-run search with new filters
-            [filterYearSelect, filterChannelSelect, filterSourceSelect].forEach(filter => {
-                filter.addEventListener('change', function() {
-                    performSearch();
-                });
             });
         });
     </script>
