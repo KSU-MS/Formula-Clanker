@@ -239,8 +239,8 @@ def search():
                 'source_type': 'discord' if 'discord_info' in metadata else 'markdown'
             }
             
-            # Only include source_file and line_number if they're valid
-            if metadata.get('source_file') and metadata.get('line_number'):
+            # Only include source_file and line_number if they're valid (not None)
+            if 'source_file' in metadata and 'line_number' in metadata and metadata.get('line_number') is not None:
                 formatted_result['source_file'] = metadata.get('source_file')
                 formatted_result['line_number'] = metadata.get('line_number')
             
