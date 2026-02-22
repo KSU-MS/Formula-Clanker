@@ -185,6 +185,8 @@ def create_vectors(messages, model_name='all-mpnet-base-v2', output_path='vector
             if 'chunk_id' in msg:
                 metadata_entry['chunk_id'] = msg['chunk_id']
             if 'chunk_index' in msg:
+                metadata_entry['chunk_id'] = msg['chunk_id']
+            if 'chunk_index' in msg:
                 metadata_entry['chunk_index'] = msg['chunk_index']
             message_metadata.append(metadata_entry)
     

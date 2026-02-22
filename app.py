@@ -244,6 +244,10 @@ def search():
                 formatted_result['source_file'] = metadata.get('source_file')
                 formatted_result['line_number'] = metadata.get('line_number')
             
+            # For markdown chunks, include chunk_id for context retrieval
+            if 'chunk_id' in metadata:
+                formatted_result['chunk_id'] = metadata.get('chunk_id')
+            
             # Add Discord link information if available
             if 'discord_info' in metadata:
                 discord_info = metadata['discord_info']
@@ -285,16 +289,11 @@ def get_context():
     
     try:
         data = request.get_json()
+        chunk_id = data.get('chunk_id', '')
         source_file = data.get('source_file', '')
         line_number_raw = data.get('line_number', 0)
         context_lines_raw = data.get('context_lines', 5)
-        if line_number_raw in [None, 'null', 'None', '']:
-            line_number = 0
-        else:
-            try:
-                line_number = int(line_number_raw)
-            except (ValueError, TypeError):
-                line_number = 0
+        
         if context_lines_raw in [None, 'null', 'None', '']:
             context_lines = 5
         else:
@@ -302,6 +301,29 @@ def get_context():
                 context_lines = int(context_lines_raw)
             except (ValueError, TypeError):
                 context_lines = 5
+        
+        # Handle markdown chunks
+        if chunk_id:
+            # Find the chunk in the vector database
+            for idx, metadata in enumerate(vector_database['message_metadata']):
+                if metadata.get('chunk_id') == chunk_id:
+                    # Return the chunk content directly
+                    return jsonify({
+                        'chunk_id': chunk_id,
+                        'content': metadata['original_message'].get('content', ''),
+                        'file_path': metadata.get('file_path', ''),
+                        'context_type': 'markdown_chunk'
+                    })
+            return jsonify({'error': f'Chunk not found: {chunk_id}'}), 404
+        
+        # Handle Discord messages (original behavior)
+        if line_number_raw in [None, 'null', 'None', '']:
+            line_number = 0
+        else:
+            try:
+                line_number = int(line_number_raw)
+            except (ValueError, TypeError):
+                line_number = 0
         
         if not source_file or line_number <= 0:
             return jsonify({'error': 'Invalid source file or line number'}), 400

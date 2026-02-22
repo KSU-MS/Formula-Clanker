@@ -293,9 +293,12 @@ def process_markdown_files(input_dir, output_dir='chunked_markdown', cache_file=
                 'chunk_id': chunk_id,
                 'chunk_index': chunk['chunk_index'],
                 'content': chunk['content'],
+                'source_file': rel_path,
                 'metadata': {
                     'file_name': Path(md_file).name,
                     'file_path': rel_path,
+                    'chunk_id': chunk_id,
+                    'chunk_index': chunk['chunk_index'],
                     'char_count': chunk['char_count'],
                     'source_type': 'markdown'
                 },

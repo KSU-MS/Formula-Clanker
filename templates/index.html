@@ -694,7 +694,9 @@
                                 </div>` : ''}
                             </div>
                             <div class="button-container">
-                                ${result.source_file && result.line_number ? `<button class="context-btn" data-source="${result.source_file}" data-line="${result.line_number}">
+                                ${result.chunk_id ? `<button class="context-btn" data-chunk-id="${result.chunk_id}" data-type="markdown">
+                                    <i class="fas fa-eye"></i> View Content
+                                </button>` : result.source_file && result.line_number ? `<button class="context-btn" data-source="${result.source_file}" data-line="${result.line_number}" data-type="discord">
                                     <i class="fas fa-eye"></i> View Context
                                 </button>` : ''}
                                 ${result.discord_link ? `<a href="${result.discord_link}" target="_blank" class="discord-link-btn"><i class="fab fa-discord"></i> Open in Discord</a>` : ''}
@@ -708,15 +710,52 @@
                 // Add event listeners to context buttons
                 document.querySelectorAll('.context-btn').forEach(button => {
                     button.addEventListener('click', function() {
-                        const sourceFile = this.getAttribute('data-source');
-                        const lineNumber = this.getAttribute('data-line');
-                        showContext(sourceFile, lineNumber);
+                        const type = this.getAttribute('data-type');
+                        if (type === 'markdown') {
+                            const chunkId = this.getAttribute('data-chunk-id');
+                            showMarkdownContent(chunkId);
+                        } else {
+                            const sourceFile = this.getAttribute('data-source');
+                            const lineNumber = this.getAttribute('data-line');
+                            showContext(sourceFile, lineNumber);
+                        }
                     });
                 });
             }
+            // Show markdown content modal
+            function showMarkdownContent(chunkId) {
+                fetch('/context', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        chunk_id: chunkId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        return;
+                    }
+                    
+                    // Display markdown content
+                    contextLines.innerHTML = `
+                        <div class="context-line">
+                            <strong>File:</strong> ${data.file_path}
+                        </div>
+                        <hr style="margin: 10px 0;">
+                        ${data.content.replace(/\n/g, '<br>')}
+                    `;
+                    contextModal.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error retrieving content: ' + error.message);
+                });
+            }
             
-            // Show context modal
-            function showContext(sourceFile, lineNumber) {
                 fetch('/context', {
                     method: 'POST',
                     headers: {
