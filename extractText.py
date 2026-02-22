@@ -11,6 +11,7 @@ import pymupdf4llm
 import pymupdf4llm.helpers.document_layout as dl
 import os
 import glob
+import sys
 
 # -----------------------------
 # Safety Patch for pymupdf4llm
@@ -54,19 +55,58 @@ def ocr_page(args):
 
 
 # -----------------------------
+# Get page count with fallback
+# -----------------------------
+def get_page_count(file_path):
+    """Get page count with fallback for when pdfinfo fails"""
+    try:
+        # Try the original method first
+        info = pdfinfo_from_path(file_path)
+        if 'Pages' in info:
+            return int(info['Pages'])
+    except Exception as e:
+        print(f"Warning: Could not get page count using pdfinfo: {e}")
+    
+    # Fallback: try to get page count using pymupdf
+    try:
+        import fitz  # PyMuPDF
+        doc = fitz.open(file_path)
+        page_count = doc.page_count
+        doc.close()
+        return page_count
+    except Exception as e:
+        print(f"Warning: Could not get page count using PyMuPDF: {e}")
+    
+    # Final fallback: try to get page count using pdfinfo directly
+    try:
+        import subprocess
+        result = subprocess.run(['pdfinfo', file_path], 
+                              capture_output=True, text=True, check=True)
+        for line in result.stdout.split('\n'):
+            if line.startswith('Pages:'):
+                return int(line.split(':')[1].strip())
+    except Exception as e:
+        print(f"Warning: Could not get page count using pdfinfo command: {e}")
+    
+    # If all methods fail, assume 1 page
+    print(f"Warning: Could not determine page count for {file_path}, assuming 1 page")
+    return 1
+
+
+# -----------------------------
 # Main Extract Function
 # -----------------------------
-def main(file_or_folder, format="text", workers=None, dpi_text=800, dpi_md=800, output_dir=None):
+def main(file_or_folder, format="markdown", workers=None, dpi_text=800, dpi_md=800, output_dir=None):
     """
     file_or_folder: path to PDF or folder containing PDFs
     format: "text" or "markdown"
     workers: number of parallel workers (defaults to cpu_count())
     dpi_text: dpi for text extraction (higher dpi -> better OCR, more CPU/RAM)
-    dpi_md: dpi for fallback markdown OCR
+    dpi_md: dpi for markdown fallback OCR
     output_dir: directory to save extracted text/markdown files (optional)
     """
     if workers is None:
-        workers = max(1, cpu_count() - 0)  # allow tuning here
+        workers = max(1, cpu_count() - 0)  # allow tuning
 
     # Check if input is a folder or single file
     if os.path.isdir(file_or_folder):
@@ -105,7 +145,7 @@ def main(file_or_folder, format="text", workers=None, dpi_text=800, dpi_md=800, 
         return process_single_pdf(file_or_folder, format, workers, dpi_text, dpi_md)
 
 
-def process_single_pdf(file, format="text", workers=None, dpi_text=800, dpi_md=800):
+def process_single_pdf(file, format="markdown", workers=None, dpi_text=800, dpi_md=800):
     """Process a single PDF file"""
     kind = filetype.guess(file)
     if kind is None:
@@ -121,19 +161,23 @@ def process_single_pdf(file, format="text", workers=None, dpi_text=800, dpi_md=8
     # TEXT mode (parallel OCR)
     # -----------------------------
     if format == "text":
-        info = pdfinfo_from_path(file)
-        total_pages = info.get("Pages", 0)
-        if total_pages == 0:
-            print("PDF has zero pages or couldn't read page count.")
+        try:
+            page_count = get_page_count(file)
+        except Exception as e:
+            print(f"Error getting page count for {file}: {e}")
+            page_count = 1  # fallback
+            
+        if page_count <= 0:
+            print(f"Warning: PDF {file} has no pages")
             return ""
-
+            
         print(f"Using {workers} worker(s) for OCR; DPI={dpi_text}")
-        args = [(file, page, dpi_text) for page in range(1, total_pages + 1)]
+        args = [(file, page, dpi_text) for page in range(1, page_count + 1)]
 
-        texts = [None] * total_pages
+        texts = [None] * page_count
         with Pool(workers) as pool:
             for page_num, text in tqdm(pool.imap_unordered(ocr_page, args),
-                                        total=total_pages,
+                                        total=page_count,
                                         desc="OCR Progress",
                                         unit="page"):
                 texts[page_num - 1] = text
@@ -150,27 +194,29 @@ def process_single_pdf(file, format="text", workers=None, dpi_text=800, dpi_md=8
             markdown = pymupdf4llm.to_markdown(file)  # removed unsupported kwargs
             print("High-quality extraction succeeded.")
             return markdown
-
         except Exception as e:
-            print(f"High-quality markdown extraction failed: {repr(e)}")
+            print(f"High-quality markdown extraction failed: {e}")
             print("Falling back to multiprocess page-by-page OCR -> markdown...")
 
-            info = pdfinfo_from_path(file)
-            total_pages = info.get("Pages", 0)
-            if total_pages == 0:
-                print("PDF has zero pages or couldn't read page count.")
+            try:
+                page_count = get_page_count(file)
+            except Exception as e:
+                print(f"Error getting page count for {file}: {e}")
+                page_count = 1  # fallback
+                
+            if page_count <= 0:
+                print(f"Warning: PDF {file} has no pages")
                 return ""
-
+                
             print(f"Using {workers} worker(s) for fallback OCR; DPI={dpi_md}")
-            args = [(file, page, dpi_md) for page in range(1, total_pages + 1)]
+            args = [(file, page, dpi_md) for page in range(1, page_count + 1)]
 
-            results = [None] * total_pages
+            results = [None] * page_count
             with Pool(workers) as pool:
                 for page_num, text in tqdm(pool.imap_unordered(ocr_page, args),
-                                            total=total_pages,
-                                            desc="OCR Markdown Fallback",
+                                            total=page_count,
+                                            desc="OCR Progress",
                                             unit="page"):
-                    # keep order by placing into results at index page_num-1
                     results[page_num - 1] = text
 
             # assemble markdown with simple page separators
@@ -186,7 +232,7 @@ def process_single_pdf(file, format="text", workers=None, dpi_text=800, dpi_md=8
 
 
 def save_result_to_file(input_file, result, format, output_dir):
-    """Save extraction result to a file preserving directory structure"""
+    """Save extraction result to file preserving directory structure"""
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     
@@ -194,11 +240,6 @@ def save_result_to_file(input_file, result, format, output_dir):
     filename = os.path.splitext(os.path.basename(input_file))[0]
     
     # Get the relative path from the input folder to preserve directory structure
-    # This requires knowing the base directory of the input folder
-    # For simplicity, we'll use the directory structure relative to the input folder
-    
-    # Create a relative path from the input folder to the current file
-    # This preserves the folder structure in the output directory
     if os.path.isdir(input_file):
         # If input is a directory, we're saving to the output directory directly
         output_file = os.path.join(output_dir, f"{filename}.{format}")
@@ -235,8 +276,6 @@ def save_result_to_file(input_file, result, format, output_dir):
 # Command-line interface
 # -----------------------------
 if __name__ == "__main__":
-    import sys
-    
     # Default values
     format = "text"
     workers = None
