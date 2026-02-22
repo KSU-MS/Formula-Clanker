@@ -1,6 +1,3 @@
-'''
-So I had Claude fix an issue and it went ahead and commented the code too. oops...
-'''
 from pdf2image import convert_from_path
 import pytesseract
 import filetype
@@ -10,7 +7,6 @@ from tqdm import tqdm
 import pymupdf4llm
 import pymupdf4llm.helpers.document_layout as dl
 import os
-import glob
 import sys
 
 # -----------------------------
@@ -77,7 +73,7 @@ def get_page_count(file_path):
     except Exception as e:
         print(f"Warning: Could not get page count using PyMuPDF: {e}")
     
-    # Final fallback: try to get page count using pdfinfo directly
+    # Final fallback: try to get page count using pdfinfo command
     try:
         import subprocess
         result = subprocess.run(['pdfinfo', file_path], 
@@ -94,6 +90,40 @@ def get_page_count(file_path):
 
 
 # -----------------------------
+# Save result to file with directory structure preservation
+# -----------------------------
+def save_result_to_file(input_file, result, format, output_dir, input_base_dir):
+    """Save extraction result to file preserving directory structure"""
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Get filename without extension
+    filename = os.path.splitext(os.path.basename(input_file))[0]
+    
+    # Calculate relative path from input base directory to current file
+    rel_path = os.path.relpath(input_file, input_base_dir)
+    
+    # Get the directory part of the relative path
+    rel_dir = os.path.dirname(rel_path)
+    
+    # Create output subdirectory if needed
+    if rel_dir:
+        output_subdir = os.path.join(output_dir, rel_dir)
+        os.makedirs(output_subdir, exist_ok=True)
+        output_file = os.path.join(output_subdir, f"{filename}.{format}")
+    else:
+        output_file = os.path.join(output_dir, f"{filename}.{format}")
+    
+    # Write result to file
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(result)
+        print(f"Saved result to {output_file}")
+    except Exception as e:
+        print(f"Error saving to file {output_file}: {repr(e)}")
+
+
+# -----------------------------
 # Main Extract Function
 # -----------------------------
 def main(file_or_folder, format="markdown", workers=None, dpi_text=800, dpi_md=800, output_dir=None):
@@ -101,9 +131,9 @@ def main(file_or_folder, format="markdown", workers=None, dpi_text=800, dpi_md=8
     file_or_folder: path to PDF or folder containing PDFs
     format: "text" or "markdown"
     workers: number of parallel workers (defaults to cpu_count())
-    dpi_text: dpi for text extraction (higher dpi -> better OCR, more CPU/RAM)
-    dpi_md: dpi for markdown fallback OCR
-    output_dir: directory to save extracted text/markdown files (optional)
+    dpi_text: DPI for text extraction
+    dpi_md: DPI for markdown extraction
+    output_dir: directory to save extracted files
     """
     if workers is None:
         workers = max(1, cpu_count() - 0)  # allow tuning
@@ -143,6 +173,8 @@ def main(file_or_folder, format="markdown", workers=None, dpi_text=800, dpi_md=8
     else:
         # Single file processing (original behavior)
         return process_single_pdf(file_or_folder, format, workers, dpi_text, dpi_md)
+
+
 def process_single_pdf(file, format="markdown", workers=None, dpi_text=800, dpi_md=800):
     """Process a single PDF file"""
     kind = filetype.guess(file)
@@ -229,43 +261,6 @@ def process_single_pdf(file, format="markdown", workers=None, dpi_text=800, dpi_
         return "--unknown-format--"
 
 
-def save_result_to_file(input_file, result, format, output_dir):
-    """Save extraction result to file preserving directory structure"""
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Get filename without extension
-    filename = os.path.splitext(os.path.basename(input_file))[0]
-    
-    # Get the absolute path of the input file
-    input_file_abs = os.path.abspath(input_file)
-    
-    # Get the absolute path of the input folder
-    input_folder_abs = os.path.abspath(file_or_folder)
-    
-    # Get the relative path from input folder to current file
-    rel_path = os.path.relpath(input_file_abs, input_folder_abs)
-    
-    # Remove the filename from the path to get just the directory structure
-    rel_dir = os.path.dirname(rel_path)
-    
-    # Create the output directory structure
-    if rel_dir:
-        output_subdir = os.path.join(output_dir, rel_dir)
-        os.makedirs(output_subdir, exist_ok=True)
-        output_file = os.path.join(output_subdir, f"{filename}.{format}")
-    else:
-            output_file = os.path.join(output_dir, f"{filename}.{format}")
-    
-    # Write result to file
-    try:
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(result)
-        print(f"Saved result to {output_file}")
-    except Exception as e:
-        print(f"Error saving to file {output_file}: {repr(e)}")
-
-
 # -----------------------------
 # Command-line interface
 # -----------------------------
@@ -303,12 +298,12 @@ if __name__ == "__main__":
     
     # Validate input
     if not input_path:
-        print("Usage: python extractText.py <input_path> [options]")
+        print("Usage: python extract_text.py <input_path> [options]")
         print("Options:")
         print("  --format <text|markdown>     Output format (default: text)")
         print("  --workers <number>           Number of parallel workers (default: CPU count)")
         print("  --dpi-text <number>          DPI for text extraction (default: 800)")
-        print("  --dpi-md <number>            DPI for markdown fallback (default: 800)")
+        print("  --dpi-md <number>            DPI for markdown extraction (default: 800)")
         print("  --output-dir <path>          Directory to save output files")
         sys.exit(1)
     
