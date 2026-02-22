@@ -508,7 +508,7 @@
         }
     </style>
 </head>
-<body>
+<body style="margin: 0; padding: 0;">
     <div id="updating-screen" class="updating-screen">
         <div class="updating-content">
             <div class="updating-spinner"></div>
@@ -608,11 +608,25 @@
     </div>
     
     <script>
-        console.log('Script starting...');
+        // Immediately check if database is loaded without waiting for DOM
+        (async function() {
+            try {
+                const response = await fetch('/refresh_status');
+                const data = await response.json();
+                
+                if (data.database_loaded) {
+                    // Database exists, hide updating screen
+                    const updatingScreen = document.getElementById('updating-screen');
+                    if (updatingScreen) {
+                        updatingScreen.classList.add('hidden');
+                    }
+                }
+            } catch (error) {
+                console.log('Error checking database status:', error);
+            }
+        })();
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded fired');
-            
             const searchInput = document.getElementById('search-input');
             const searchButton = document.getElementById('search-button');
             const topKInput = document.getElementById('top-k-input');
@@ -630,37 +644,27 @@
             const refreshMessage = document.getElementById('refresh-message');
             const updatingScreen = document.getElementById('updating-screen');
             
-            console.log('updating-screen element:', updatingScreen);
-            
             let currentResults = [];  // Store current results for sorting
             let availableFilters = {};  // Store available filters
             
             // Check refresh status periodically
             function checkRefreshStatus() {
-                console.log('Checking refresh status...');
                 fetch('/refresh_status', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 })
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    console.log('Refresh status data:', data);
-                    
                     if (!data.database_loaded) {
                         // Database not loaded - show updating screen
-                        console.log('Database not loaded, showing updating screen');
                         updatingScreen.classList.remove('hidden');
                         // Check again in 2 seconds
                         setTimeout(checkRefreshStatus, 2000);
                         return;
                     } else {
                         // Database is loaded - hide updating screen
-                        console.log('Database loaded, hiding updating screen');
                         updatingScreen.classList.add('hidden');
                     }
                     
@@ -690,13 +694,11 @@
                 });
             }
             
-            console.log('Setting up status check interval...');
             // Check refresh status every 2 seconds
             setInterval(checkRefreshStatus, 2000);
             
-            // Initial check
-            console.log('Running initial status check...');
-            checkRefreshStatus();
+            // Initial check (slight delay to let page render)
+            setTimeout(checkRefreshStatus, 500);
             
             // Load available filters on page load
             function loadAvailableFilters() {
