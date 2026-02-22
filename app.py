@@ -206,7 +206,14 @@ def search():
         print(f"Search data received: {data}")
         
         query = data.get('query', '')
-        top_k = int(data.get('top_k', 10))
+        top_k_raw = data.get('top_k', 10)
+        if top_k_raw in [None, 'null', 'None', '']:
+            top_k = 10
+        else:
+            try:
+                top_k = int(top_k_raw)
+            except (ValueError, TypeError):
+                top_k = 10
         filters = data.get('filters', {})
         
         if not query:
@@ -276,8 +283,22 @@ def get_context():
     try:
         data = request.get_json()
         source_file = data.get('source_file', '')
-        line_number = int(data.get('line_number', 0))
-        context_lines = int(data.get('context_lines', 5))
+        line_number_raw = data.get('line_number', 0)
+        context_lines_raw = data.get('context_lines', 5)
+        if line_number_raw in [None, 'null', 'None', '']:
+            line_number = 0
+        else:
+            try:
+                line_number = int(line_number_raw)
+            except (ValueError, TypeError):
+                line_number = 0
+        if context_lines_raw in [None, 'null', 'None', '']:
+            context_lines = 5
+        else:
+            try:
+                context_lines = int(context_lines_raw)
+            except (ValueError, TypeError):
+                context_lines = 5
         
         if not source_file or line_number <= 0:
             return jsonify({'error': 'Invalid source file or line number'}), 400
@@ -361,7 +382,14 @@ def search_markdown():
     try:
         data = request.get_json()
         query = data.get('query', '')
-        top_k = int(data.get('top_k', 10))
+        top_k_raw = data.get('top_k', 10)
+        if top_k_raw in [None, 'null', 'None', '']:
+            top_k = 10
+        else:
+            try:
+                top_k = int(top_k_raw)
+            except (ValueError, TypeError):
+                top_k = 10
         filters = data.get('filters', {})
         
         if not query:
@@ -404,7 +432,14 @@ def search_discord():
     try:
         data = request.get_json()
         query = data.get('query', '')
-        top_k = int(data.get('top_k', 10))
+        top_k_raw = data.get('top_k', 10)
+        if top_k_raw in [None, 'null', 'None', '']:
+            top_k = 10
+        else:
+            try:
+                top_k = int(top_k_raw)
+            except (ValueError, TypeError):
+                top_k = 10
         filters = data.get('filters', {})
         
         if not query:
