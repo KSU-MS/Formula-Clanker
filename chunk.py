@@ -166,7 +166,7 @@ def get_file_hash(filepath):
         print(f"Error calculating hash for {filepath}: {e}")
         return None
 
-def chunk_markdown_file(file_path, chunk_size=500, overlap=50):
+def chunk_markdown_file(file_path, chunk_size=1000, overlap=100):
     """
     Split a markdown file into chunks with configurable overlap.
     
